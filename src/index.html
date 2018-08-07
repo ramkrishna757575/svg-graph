@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">-->
+    <link rel="stylesheet" href="styles.css">
+    <title>Airline Chart</title>
+  </head>
+  <body>
+    <div class="header" id="header">
+      <div class="inline">
+        <h3>Airplane Flights</h3>
+      </div>
+      <div class="inline pull-right">
+        <input class="form-control" type="text" placeholder="airline" id="airline">
+      </div>
+    </div>
+    <div style="clear: both"></div>
+    <div id="chart-container" class="chart-container">
+      <div class="chart-header center">
+        <div class="flights-count inline" id="flights-count">
+          <h6><strong>804 flights</strong></h6>
+        </div>
+        <div class="airline-name inline" id="airline-name">
+          <h6>All airlines</h6>
+        </div>
+      </div>
+      <div class="chart-plot">
+
+      </div>
+    </div>
+    <script src="airline-data.js"></script>
+    <script async src="index.js"></script>
+  </body>
+</html>
