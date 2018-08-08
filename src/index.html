@@ -20,7 +20,7 @@
     </div>
     <div style="clear: both"></div>
     <div id="chart-container" class="chart-container">
-      <div class="chart-header center">
+      <div class="chart-header center" id="chart-header">
         <div class="flights-count inline" id="flights-count">
           <h6><strong>804 flights</strong></h6>
         </div>
@@ -28,8 +28,8 @@
           <h6>All airlines</h6>
         </div>
       </div>
-      <div class="chart-plot">
-
+      <div class="chart-plot" id="chart-plot">
+        <svg xmlns="http://www.w3.org/2000/svg" id="svg-chart"></svg>
       </div>
     </div>
     <script src="airline-data.js"></script>

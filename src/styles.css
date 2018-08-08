@@ -67,3 +67,7 @@ p {
 .chart-unit-x {
   width: 4%;
 }
+
+#svg-chart {
+  background: #fff;
+}
