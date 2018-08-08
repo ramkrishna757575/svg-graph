@@ -33,9 +33,10 @@ function initDataPoints(dataPoints) {
   }
 }
 
-function initChart() {
+function initPage() {
   recalculateChartSize();
   setGraphHeaders();
+  addInputListener();
 }
 
 function recalculateChartSize() {
@@ -50,7 +51,7 @@ function recalculateChartSize() {
   plotGraph(dataPoints, selectedAirline, chartWidth, availableHeight - chartHeaderHeight, parseInt(bodyLeftMargin) + 10, 0);
 }
 
-window.onload = initChart();
+window.onload = initPage;
 
 window.onresize = function () {
   var resizeTimeout;
@@ -333,4 +334,14 @@ function setGraphHeaders() {
 
   var airlineNameElement = document.getElementById("airline-name");
   airlineNameElement.innerText = airlines[selectedAirline] || ALL_AIRLINES_VALUE;
+}
+
+function addInputListener() {
+  var inputElement = document.getElementById("airline-selector");
+  inputElement.addEventListener('keypress', updateGraphOnInputChange);
+  inputElement.addEventListener('blur', updateGraphOnInputChange);
+}
+
+function updateGraphOnInputChange(e) {
+  console.log('input');
 }
