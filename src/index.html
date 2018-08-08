@@ -13,19 +13,23 @@
     <div class="header" id="header">
       <div class="inline">
         <h3>Airplane Flights</h3>
+        <p class="small-font">Data showing number of flights in 24 hours of a day</p>
       </div>
       <div class="inline pull-right">
-        <input class="form-control" type="text" placeholder="airline" id="airline">
+        <input class="form-control" type="text" placeholder="airline" id="airline-selector">
       </div>
     </div>
     <div style="clear: both"></div>
     <div id="chart-container" class="chart-container">
       <div class="chart-header center" id="chart-header">
-        <div class="flights-count inline" id="flights-count">
-          <h6><strong>804 flights</strong></h6>
+        <div class="chart-header-primary inline">
+          <h6>Date: 1 Jan 2008</h6>
         </div>
-        <div class="airline-name inline" id="airline-name">
-          <h6>All airlines</h6>
+        <div class="chart-header-primary inline">
+          <h6><strong id="flights-count">804 flights</strong></h6>
+        </div>
+        <div class="chart-header-primary inline">
+          <h6 id="airline-name">All airlines</h6>
         </div>
       </div>
       <div class="chart-plot" id="chart-plot">
@@ -34,6 +38,6 @@
       </div>
     </div>
     <script src="airline-data.js"></script>
-    <script async src="index.js"></script>
+    <script src="index.js"></script>
   </body>
 </html>

@@ -1,12 +1,15 @@
 const keys = Object.keys(airlines);
-var dataPoints = new Array(24);
-var selectedAirline = 'total';
+const HOURS = 24;
+const ALL_AIRLINES_KEY = 'total';
+const ALL_AIRLINES_VALUE = 'All Airlines';
+var dataPoints = new Array(HOURS);
+var selectedAirline = ALL_AIRLINES_KEY;
 var initialCounterObj = {};
 keys.map(function (key) {
   initialCounterObj[key] = 0;
 });
 
-initialCounterObj["total"] = 0;
+initialCounterObj[ALL_AIRLINES_KEY] = 0;
 initDataPoints(dataPoints);
 flights_jan_01_2008.map(function (data) {
   if (!!data) {
@@ -16,7 +19,7 @@ flights_jan_01_2008.map(function (data) {
       if (timeValues.length === 3) {
         var bucket = parseInt(timeValues[0]);
         if (!!dataPoints[bucket]) {
-          dataPoints[bucket]["total"] += 1;
+          dataPoints[bucket][ALL_AIRLINES_KEY] += 1;
           dataPoints[bucket][data.airline] += 1;
         }
       }
@@ -32,6 +35,7 @@ function initDataPoints(dataPoints) {
 
 function initChart() {
   recalculateChartSize();
+  setGraphHeaders();
 }
 
 function recalculateChartSize() {
@@ -99,6 +103,7 @@ function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
   drawSelectionForeground(svgChart, data.length, calculatedData.distance, height);
   drawLine(svgChart, svgData);
   drawPoints(svgChart, svgData);
+  drawValues(svgChart, svgData, data, attribute);
   drawTransparentIntervalRects(svgChart, data.length, calculatedData.distance, height);
   addHoverListeners();
 }
@@ -259,9 +264,21 @@ function drawClipPath(svgElement, svgData, xDistance, height) {
   clipPathElement.appendChild(clipPath);
 }
 
-/*function drawValues(svgElement, svgData, data, attribute) {
-
-}*/
+function drawValues(svgElement, svgData, data, attribute) {
+  for (var i = 0; i < data.length; i++) {
+    var value = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+    value.setAttribute("x", svgData[i][0] - 10);
+    value.setAttribute("y", svgData[i][1] - 10);
+    value.setAttribute("class", "pointValue");
+    value.setAttribute("style", "font:italic 15px sans-serif;fill:#9c27b0;");
+    value.textContent = data[i][attribute];
+    value.style.display = 'none';
+    svgElement.appendChild(value);
+  }
+}
 
 function indexInClass(node, myClass) {
   var className = node.className;
@@ -282,7 +299,7 @@ function addHoverListeners() {
     hoverAreas[i].addEventListener('mouseover', function (event) {
       setSelection(indexInClass(event.target, hoverAreas));
     });
-    hoverAreas[i].addEventListener('mouseout', function () {
+    hoverAreas[i].addEventListener('mouseout', function (event) {
       removeSelection(indexInClass(event.target, hoverAreas));
     });
   }
@@ -291,13 +308,29 @@ function addHoverListeners() {
 function removeSelection(i) {
   var selectionBackgrounds = document.getElementsByClassName("selectionBackground");
   var selectionForegrounds = document.getElementsByClassName("selectionForeground");
+  var selectedValues = document.getElementsByClassName("pointValue");
   selectionBackgrounds[i].style.display = 'none';
   selectionForegrounds[i].style.display = 'none';
+  selectedValues[i].style.display = 'none';
 }
 
 function setSelection(i) {
   var selectionBackgrounds = document.getElementsByClassName("selectionBackground");
   var selectionForegrounds = document.getElementsByClassName("selectionForeground");
+  var selectedValues = document.getElementsByClassName("pointValue");
   selectionBackgrounds[i].style.display = 'block';
   selectionForegrounds[i].style.display = 'block';
+  selectedValues[i].style.display = 'block';
+}
+
+function setGraphHeaders() {
+  var flightsCountElement = document.getElementById("flights-count");
+  var flightsCount = 0;
+  for (var i = 0; i < dataPoints.length; i++) {
+    flightsCount += dataPoints[i][selectedAirline];
+  }
+  flightsCountElement.innerText = flightsCount + " flights";
+
+  var airlineNameElement = document.getElementById("airline-name");
+  airlineNameElement.innerText = airlines[selectedAirline] || ALL_AIRLINES_VALUE;
 }
