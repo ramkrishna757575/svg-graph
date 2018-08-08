@@ -65,36 +65,45 @@ function getCountsArray(graphData, attribute) {
   });
 }
 
-function calculateSVGData(graphData, attribute, width, height, xoffset, yoffset) {
+function calculateSVGData(graphData, attribute, width, height, xOffset = 0, yOffset = 0) {
   var values = getCountsArray(graphData, attribute);
-  return getCoordinates(values, width, height, xoffset, yoffset)
+  return getCoordinates(values, width, height, xOffset, yOffset)
 }
 
 
-function getCoordinates(values, width, height, xoffset, yoffset) {
+function getCoordinates(values, width, height, xOffset = 0, yOffset = 0) {
   var min = Math.floor(Math.min.apply(null, values) * 0.8);
   var max = Math.ceil(Math.max.apply(null, values) * 1.2);
 
   var yRatio = (max - min) / height;
   var xRatio = width / (values.length);
-  return values.map(function (value, i) {
+  var coordinates = values.map(function (value, i) {
     var y = height - ((value - min) / yRatio);
     var x = (xRatio * i) - (xRatio / 2);
-    return [x + xoffset, y + yoffset];
+    return [x + xOffset, y + yOffset];
   });
+  return {coordinates: coordinates, distance: xRatio};
 }
 
-function plotGraph(data, attribute, width, height, xoffset = 0, yoffset = 0) {
-  var svgData = calculateSVGData(data, attribute, width, height, xoffset, yoffset);
+function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
+  var calculatedData = calculateSVGData(data, attribute, width, height, xOffset, yOffset);
+  var svgData = calculatedData.coordinates;
   var svgChart = document.getElementById('svg-chart');
   svgChart.innerHTML = "";
   svgChart.setAttribute("style", "shape-rendering:auto;height:" + height + "px; width:" + width + "px");
 
+  drawArea(svgChart, svgData, height, calculatedData.distance);
+  drawGridLines(svgChart, data.length, calculatedData.distance, height);
+  drawSelectionBackground(svgChart, data.length, calculatedData.distance, height);
+  drawClipPath(svgChart, svgData, calculatedData.distance, height);
+  drawSelectionForeground(svgChart, data.length, calculatedData.distance, height);
   drawLine(svgChart, svgData);
   drawPoints(svgChart, svgData);
+  drawTransparentIntervalRects(svgChart, data.length, calculatedData.distance, height);
+  addHoverListeners();
 }
 
-function drawLine(svgElement, svgData) {
+function getLineCommand(svgData) {
   var lineData = "";
   svgData.map(function (coordinates, i) {
     var command = i === 0 ? "M" : "L";
@@ -106,7 +115,11 @@ function drawLine(svgElement, svgData) {
       + ","
       + coordinates[1]
   });
+  return lineData;
+}
 
+function drawLine(svgElement, svgData) {
+  var lineData = getLineCommand(svgData);
   var line = document.createElementNS(
     "http://www.w3.org/2000/svg",
     "path"
@@ -133,4 +146,158 @@ function drawPoints(svgElement, svgData) {
     point.setAttribute("stroke-width", 2);
     svgElement.appendChild(point);
   });
+}
+
+function drawArea(svgElement, svgData, height, xDistance) {
+  var areaPoints = getLineCommand(svgData);
+  areaPoints = areaPoints
+    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1]
+    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + height
+    + ' L' + 0 + ", " + height
+    + ' L' + 0 + ", " + svgData[0][1]
+    + ' L' + svgData[0][0] + ", " + svgData[0][1]
+    + ' z';
+
+  var area = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "path"
+  );
+  area.setAttribute("d", areaPoints);
+  area.setAttribute("fill", "#f6f6f6");
+  svgElement.appendChild(area);
+}
+
+function drawGridLines(svgElement, dataCount, xDistance, height) {
+  var lineData = "";
+  for (var i = 1; i < dataCount; i++) {
+    lineData += "M " + (xDistance * i) + "," + height + " L " + (xDistance * i) + ",0";
+  }
+
+  var line = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "path"
+  );
+  line.setAttribute("d", lineData);
+  line.setAttribute("fill", "none");
+  line.setAttribute("stroke", "#eaeaea");
+  line.setAttribute("stroke-width", 1);
+  svgElement.appendChild(line);
+}
+
+function drawTransparentIntervalRects(svgElement, dataCount, xDistance, height) {
+  for (var i = 1; i <= dataCount; i++) {
+    var rect = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect"
+    );
+    rect.setAttribute("width", xDistance);
+    rect.setAttribute("height", height);
+    rect.setAttribute("x", xDistance * (i - 1));
+    rect.setAttribute("y", 0);
+    rect.setAttribute("fill", "transparent");
+    rect.setAttribute('class', 'hoverArea');
+    svgElement.appendChild(rect);
+  }
+}
+
+function drawSelectionForeground(svgElement, dataCount, xDistance, height) {
+  for (var i = 1; i <= dataCount; i++) {
+    var rect = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect"
+    );
+    rect.setAttribute("width", xDistance);
+    rect.setAttribute("height", height);
+    rect.setAttribute("x", xDistance * (i - 1));
+    rect.setAttribute("y", 0);
+    rect.setAttribute("fill", "#5CC0C0");
+    rect.setAttribute("clip-path", "url(#graphClipPath)");
+    rect.style.display = 'none';
+    rect.setAttribute('class', 'selectionForeground');
+    svgElement.appendChild(rect);
+  }
+}
+
+function drawSelectionBackground(svgElement, dataCount, xDistance, height) {
+  for (var i = 1; i <= dataCount; i++) {
+    var rect = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect"
+    );
+    rect.setAttribute("width", xDistance);
+    rect.setAttribute("height", height);
+    rect.setAttribute("x", xDistance * (i - 1));
+    rect.setAttribute("y", 0);
+    rect.setAttribute("fill", "#f6f6f6");
+    rect.style.display = 'none';
+    rect.setAttribute('class', 'selectionBackground');
+    svgElement.appendChild(rect);
+  }
+}
+
+function drawClipPath(svgElement, svgData, xDistance, height) {
+  var clipPathElement = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "clipPath"
+  );
+  clipPathElement.setAttribute("id", "graphClipPath");
+  svgElement.appendChild(clipPathElement);
+  var clipPathPoints = getLineCommand(svgData);
+  clipPathPoints = clipPathPoints
+    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1]
+    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + height
+    + ' L' + 0 + ", " + height
+    + ' L' + 0 + ", " + svgData[0][1]
+    + ' L' + svgData[0][0] + ", " + svgData[0][1]
+    + ' z';
+
+  var clipPath = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "path"
+  );
+  clipPath.setAttribute("d", clipPathPoints);
+  clipPathElement.appendChild(clipPath);
+}
+
+/*function drawValues(svgElement, svgData, data, attribute) {
+
+}*/
+
+function indexInClass(node, myClass) {
+  var className = node.className;
+  var num = 0;
+  for (var i = 0; i < myClass.length; i++) {
+    if (myClass[i] === node) {
+      return num;
+    }
+    num++;
+  }
+
+  return -1;
+}
+
+function addHoverListeners() {
+  var hoverAreas = document.getElementsByClassName("hoverArea");
+  for (var i = 0; i < hoverAreas.length; i++) {
+    hoverAreas[i].addEventListener('mouseover', function (event) {
+      setSelection(indexInClass(event.target, hoverAreas));
+    });
+    hoverAreas[i].addEventListener('mouseout', function () {
+      removeSelection(indexInClass(event.target, hoverAreas));
+    });
+  }
+}
+
+function removeSelection(i) {
+  var selectionBackgrounds = document.getElementsByClassName("selectionBackground");
+  var selectionForegrounds = document.getElementsByClassName("selectionForeground");
+  selectionBackgrounds[i].style.display = 'none';
+  selectionForegrounds[i].style.display = 'none';
+}
+
+function setSelection(i) {
+  var selectionBackgrounds = document.getElementsByClassName("selectionBackground");
+  var selectionForegrounds = document.getElementsByClassName("selectionForeground");
+  selectionBackgrounds[i].style.display = 'block';
+  selectionForegrounds[i].style.display = 'block';
 }
