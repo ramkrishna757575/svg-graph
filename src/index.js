@@ -5,6 +5,7 @@ const ALL_AIRLINES_KEY = 'total';           //key to be used when showing all ai
 const ALL_AIRLINES_VALUE = 'All Airlines';  //value to be used when showing all airlines graph
 var dataPoints = new Array(HOURS);          //An array to hold count of airlines per hour of a day
 var selectedAirline = ALL_AIRLINES_KEY;     //holds the current selection of airline for plotting its data
+var previousSelectedAirline;                //holds the key of the previously selected airline
 
 //initialise an empty object and fill it with keys from the airlines object
 //will hold count of each airlines per hour
@@ -82,7 +83,7 @@ function drawGraph() {
   var chartWidth = chartContainer.clientWidth;
   var chartHeaderHeight = document.getElementById('chart-header').clientHeight;
   var bodyLeftMargin = window.getComputedStyle(document.body).marginLeft;
-  plotGraph(dataPoints, selectedAirline, chartWidth, availableHeight - chartHeaderHeight, parseInt(bodyLeftMargin) + 10, 0);
+  plotGraph(dataPoints, selectedAirline, previousSelectedAirline, chartWidth, availableHeight - chartHeaderHeight, parseInt(bodyLeftMargin) + 10, 0);
 }
 
 /**
@@ -93,7 +94,7 @@ function drawGraph() {
  */
 function getCountsArray(graphData, attribute) {
   return graphData.map(function (item) {
-    return item[attribute];
+    return item[attribute] || 0;
   });
 }
 
@@ -110,7 +111,7 @@ function getCountsArray(graphData, attribute) {
  */
 function calculateSVGData(graphData, attribute, width, height, xOffset = 0, yOffset = 0) {
   var values = getCountsArray(graphData, attribute);
-  return getCoordinates(values, width, height, xOffset, yOffset)
+  return getCoordinates(values, width, height, xOffset, yOffset);
 }
 
 /**
@@ -131,7 +132,7 @@ function getCoordinates(values, width, height, xOffset = 0, yOffset = 0) {
   var yRatio = (max - min) / height;
   var xRatio = width / (values.length);
   var coordinates = values.map(function (value, i) {
-    var y = height - ((value - min) / yRatio);
+    var y = height - ((value - min) / (!!yRatio ? yRatio : 1));
     var x = (xRatio * i) - (xRatio / 2);
     return [x + xOffset, y + yOffset];
   });
@@ -145,13 +146,15 @@ function getCoordinates(values, width, height, xOffset = 0, yOffset = 0) {
  * draws all the elements of the svg to render the graph
  * @param data - the processed airlines data
  * @param attribute - the selected airline's key
+ * @param prevAttribute - the previously selected airline's key
  * @param width - the available width for the graph
  * @param height - the available height for the graph
  * @param xOffset - any offset to be used on the x-axis of the graph
  * @param yOffset - any offset to be used on the y-axis of the graph
  */
-function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
+function plotGraph(data, attribute, prevAttribute, width, height, xOffset = 0, yOffset = 0) {
   var calculatedData = calculateSVGData(data, attribute, width, height, xOffset, yOffset);
+  var prevSvgData = calculateSVGData(data, prevAttribute, width, height, xOffset, yOffset).coordinates;
   var svgData = calculatedData.coordinates;
   var svgChart = document.getElementById('svg-chart');
   while (svgChart.firstChild) {
@@ -165,13 +168,13 @@ function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
     return;
   }
 
-  drawArea(svgChart, svgData, height, calculatedData.distance);
+  drawArea(svgChart, svgData, prevSvgData, height, calculatedData.distance);
   drawGridLines(svgChart, data.length, calculatedData.distance, height);
   drawSelectionBackground(svgChart, data.length, calculatedData.distance, height);
   drawClipPath(svgChart, svgData, calculatedData.distance, height);
   drawSelectionForeground(svgChart, data.length, calculatedData.distance, height);
-  drawPath(svgChart, svgData);
-  drawPoints(svgChart, svgData);
+  drawPath(svgChart, svgData, prevSvgData, height);
+  drawPoints(svgChart, svgData, prevSvgData);
   drawValues(svgChart, svgData, data, attribute);
   drawTransparentIntervalRects(svgChart, data.length, calculatedData.distance, height);
   addHoverListeners();
@@ -179,10 +182,12 @@ function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
 
 /**
  * takes the generated svg coordinates and generates a command to draw svg path
+ * @param defaultLine - true/false, specifies the zero line or the line for data
  * @param svgData
+ * @param height
  * @returns {string}
  */
-function getLineCommand(svgData) {
+function getLineCommand(svgData, height, defaultLine = false) {
   var lineData = "";
   svgData.map(function (coordinates, i) {
     var command = i === 0 ? "M" : "L";
@@ -192,7 +197,7 @@ function getLineCommand(svgData) {
       " " +
       coordinates[0] +
       "," +
-      coordinates[1]
+      ((defaultLine && !!height) ? height : coordinates[1])
   });
   return lineData;
 }
@@ -217,27 +222,44 @@ function drawErrorMessage(svgElement) {
  * creates a path in the specified svg element based on the generated svg coordinates
  * @param svgElement
  * @param svgData
+ * @param prevSvgData
  */
-function drawPath(svgElement, svgData) {
+function drawPath(svgElement, svgData, prevSvgData) {
   var lineData = getLineCommand(svgData);
+  var prevLineData = getLineCommand(prevSvgData);
   var line = document.createElementNS(
     "http://www.w3.org/2000/svg",
     "path"
   );
-  line.setAttribute("d", lineData);
+  line.setAttribute("d", prevLineData);
   line.setAttribute("fill", "none");
   line.setAttribute("stroke", "#5CC0C0");
   line.setAttribute("stroke-width", 3);
+
+  var animate = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "animate"
+  );
+  animate.setAttribute("attributeName", "d");
+  animate.setAttribute("from", prevLineData);
+  animate.setAttribute("to", lineData);
+  animate.setAttribute("dur", "500ms");
+  animate.setAttribute("begin", "indefinite");
+  animate.setAttribute("end", "indefinite");
+  animate.setAttribute("fill", "freeze");
+  line.appendChild(animate);
   svgElement.appendChild(line);
+  animate.beginElement();
 }
 
 /**
  * creates data points in the specified svg element based on the generated svg coordinates
  * @param svgElement
  * @param svgData
+ * @param prevSvgData
  */
-function drawPoints(svgElement, svgData) {
-  svgData.map(function (coordinates) {
+function drawPoints(svgElement, svgData, prevSvgData) {
+  prevSvgData.map(function (coordinates, i) {
     var point = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "circle"
@@ -249,7 +271,21 @@ function drawPoints(svgElement, svgData) {
     point.setAttribute("fill", "#5CC0C0");
     point.setAttribute("stroke", "#fff");
     point.setAttribute("stroke-width", 2);
+
+    var animate = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "animate"
+    );
+    animate.setAttribute("attributeName", "cy");
+    animate.setAttribute("from", coordinates[1]);
+    animate.setAttribute("to", svgData[i][1]);
+    animate.setAttribute("dur", "500ms");
+    animate.setAttribute("begin", "indefinite");
+    animate.setAttribute("end", "indefinite");
+    animate.setAttribute("fill", "freeze");
+    point.appendChild(animate);
     svgElement.appendChild(point);
+    animate.beginElement();
   });
 }
 
@@ -257,10 +293,11 @@ function drawPoints(svgElement, svgData) {
  * shades the area covered by the graph plotted
  * @param svgElement
  * @param svgData
+ * @param prevSvgData
  * @param height
  * @param xDistance
  */
-function drawArea(svgElement, svgData, height, xDistance) {
+function drawArea(svgElement, svgData, prevSvgData, height, xDistance) {
   var areaPoints = getLineCommand(svgData);
   areaPoints = areaPoints +
     ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1] +
@@ -270,13 +307,36 @@ function drawArea(svgElement, svgData, height, xDistance) {
     ' L' + svgData[0][0] + ", " + svgData[0][1] +
     ' z';
 
+  var prevAreaPoints = getLineCommand(prevSvgData);
+  prevAreaPoints = prevAreaPoints +
+    ' L' + (prevSvgData[prevSvgData.length - 1][0] + xDistance) + ", " + prevSvgData[prevSvgData.length - 1][1] +
+    ' L' + (prevSvgData[prevSvgData.length - 1][0] + xDistance) + ", " + height +
+    ' L' + 0 + ", " + height +
+    ' L' + 0 + ", " + prevSvgData[0][1] +
+    ' L' + prevSvgData[0][0] + ", " + prevSvgData[0][1] +
+    ' z';
+
   var area = document.createElementNS(
     "http://www.w3.org/2000/svg",
     "path"
   );
-  area.setAttribute("d", areaPoints);
+  area.setAttribute("d", prevAreaPoints);
   area.setAttribute("fill", "#f6f6f6");
+
+  var animate = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "animate"
+  );
+  animate.setAttribute("attributeName", "d");
+  animate.setAttribute("from", prevAreaPoints);
+  animate.setAttribute("to", areaPoints);
+  animate.setAttribute("dur", "500ms");
+  animate.setAttribute("begin", "indefinite");
+  animate.setAttribute("end", "indefinite");
+  animate.setAttribute("fill", "freeze");
+  area.appendChild(animate);
   svgElement.appendChild(area);
+  animate.beginElement();
 }
 
 /**
@@ -532,6 +592,7 @@ function updateGraphOnInputChange(e) {
         }
       }
       if (!!match && match !== selectedAirline) {
+        previousSelectedAirline = selectedAirline;
         selectedAirline = match;
         drawGraph();
         setGraphHeaders();
@@ -545,6 +606,7 @@ function updateGraphOnInputChange(e) {
  * resets and shows the graph for all airlines
  */
 function showAllAirlinesGraph() {
+  previousSelectedAirline = selectedAirline;
   selectedAirline = ALL_AIRLINES_KEY;
   drawGraph();
   setGraphHeaders();
