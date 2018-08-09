@@ -16,7 +16,14 @@
         <p class="small-font">Data showing number of flights in 24 hours of a day</p>
       </div>
       <div class="inline pull-right">
-        <input class="form-control" type="text" placeholder="airline" id="airline-selector">
+        <input class="form-control" type="text"
+               placeholder="airline" id="airline-selector"
+               onkeypress="updateGraphOnInputChange(event)"
+               onblur="updateGraphOnInputChange(event)">
+        <button class="btn btn-outline-primary"
+                id="reset-button"
+                onclick="showAllAirlinesGraph()">Reset
+        </button>
       </div>
     </div>
     <div style="clear: both"></div>

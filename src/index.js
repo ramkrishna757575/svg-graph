@@ -34,12 +34,11 @@ function initDataPoints(dataPoints) {
 }
 
 function initPage() {
-  recalculateChartSize();
+  drawGraph();
   setGraphHeaders();
-  addInputListener();
 }
 
-function recalculateChartSize() {
+function drawGraph() {
   var headerHeight = document.getElementById('header').clientHeight;
   var windowHeight = window.innerHeight;
   var availableHeight = windowHeight - headerHeight - Math.ceil(windowHeight / 5);
@@ -58,7 +57,7 @@ window.onresize = function () {
   if (!resizeTimeout) {
     resizeTimeout = setTimeout(function () {
       resizeTimeout = null;
-      recalculateChartSize();
+      drawGraph();
     }, 300);
   }
 };
@@ -87,7 +86,10 @@ function getCoordinates(values, width, height, xOffset = 0, yOffset = 0) {
     var x = (xRatio * i) - (xRatio / 2);
     return [x + xOffset, y + yOffset];
   });
-  return {coordinates: coordinates, distance: xRatio};
+  return {
+    coordinates: coordinates,
+    distance: xRatio
+  };
 }
 
 function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
@@ -113,13 +115,13 @@ function getLineCommand(svgData) {
   var lineData = "";
   svgData.map(function (coordinates, i) {
     var command = i === 0 ? "M" : "L";
-    lineData = lineData
-      + " "
-      + command
-      + " "
-      + coordinates[0]
-      + ","
-      + coordinates[1]
+    lineData = lineData +
+      " " +
+      command +
+      " " +
+      coordinates[0] +
+      "," +
+      coordinates[1]
   });
   return lineData;
 }
@@ -156,13 +158,13 @@ function drawPoints(svgElement, svgData) {
 
 function drawArea(svgElement, svgData, height, xDistance) {
   var areaPoints = getLineCommand(svgData);
-  areaPoints = areaPoints
-    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1]
-    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + height
-    + ' L' + 0 + ", " + height
-    + ' L' + 0 + ", " + svgData[0][1]
-    + ' L' + svgData[0][0] + ", " + svgData[0][1]
-    + ' z';
+  areaPoints = areaPoints +
+    ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1] +
+    ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + height +
+    ' L' + 0 + ", " + height +
+    ' L' + 0 + ", " + svgData[0][1] +
+    ' L' + svgData[0][0] + ", " + svgData[0][1] +
+    ' z';
 
   var area = document.createElementNS(
     "http://www.w3.org/2000/svg",
@@ -249,13 +251,13 @@ function drawClipPath(svgElement, svgData, xDistance, height) {
   clipPathElement.setAttribute("id", "graphClipPath");
   svgElement.appendChild(clipPathElement);
   var clipPathPoints = getLineCommand(svgData);
-  clipPathPoints = clipPathPoints
-    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1]
-    + ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + height
-    + ' L' + 0 + ", " + height
-    + ' L' + 0 + ", " + svgData[0][1]
-    + ' L' + svgData[0][0] + ", " + svgData[0][1]
-    + ' z';
+  clipPathPoints = clipPathPoints +
+    ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + svgData[svgData.length - 1][1] +
+    ' L' + (svgData[svgData.length - 1][0] + xDistance) + ", " + height +
+    ' L' + 0 + ", " + height +
+    ' L' + 0 + ", " + svgData[0][1] +
+    ' L' + svgData[0][0] + ", " + svgData[0][1] +
+    ' z';
 
   var clipPath = document.createElementNS(
     "http://www.w3.org/2000/svg",
@@ -336,12 +338,29 @@ function setGraphHeaders() {
   airlineNameElement.innerText = airlines[selectedAirline] || ALL_AIRLINES_VALUE;
 }
 
-function addInputListener() {
-  var inputElement = document.getElementById("airline-selector");
-  inputElement.addEventListener('keypress', updateGraphOnInputChange);
-  inputElement.addEventListener('blur', updateGraphOnInputChange);
+function updateGraphOnInputChange(e) {
+  if (e.type === 'keypress' && e.key === 'Enter' || e.type === 'blur') {
+    if (!!e.target) {
+      var inputString = e.target.value.toLowerCase();
+      var match;
+      for (var i = 0; i < Object.keys(airlines).length; i++) {
+        if (!!inputString && Object.values(airlines)[i].toLowerCase().indexOf(inputString) > -1) {
+          match = Object.keys(airlines)[i];
+          break;
+        }
+      }
+      if (!!match && match !== selectedAirline) {
+        selectedAirline = match;
+        drawGraph();
+        setGraphHeaders();
+      }
+      e.target.value = "";
+    }
+  }
 }
 
-function updateGraphOnInputChange(e) {
-  console.log('input');
+function showAllAirlinesGraph() {
+  selectedAirline = ALL_AIRLINES_KEY;
+  drawGraph();
+  setGraphHeaders();
 }
