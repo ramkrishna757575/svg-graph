@@ -162,7 +162,7 @@ function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
   drawSelectionBackground(svgChart, data.length, calculatedData.distance, height);
   drawClipPath(svgChart, svgData, calculatedData.distance, height);
   drawSelectionForeground(svgChart, data.length, calculatedData.distance, height);
-  drawLine(svgChart, svgData);
+  drawPath(svgChart, svgData);
   drawPoints(svgChart, svgData);
   drawValues(svgChart, svgData, data, attribute);
   drawTransparentIntervalRects(svgChart, data.length, calculatedData.distance, height);
@@ -194,7 +194,7 @@ function getLineCommand(svgData) {
  * @param svgElement
  * @param svgData
  */
-function drawLine(svgElement, svgData) {
+function drawPath(svgElement, svgData) {
   var lineData = getLineCommand(svgData);
   var line = document.createElementNS(
     "http://www.w3.org/2000/svg",
