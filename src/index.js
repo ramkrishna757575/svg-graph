@@ -154,6 +154,9 @@ function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
   var calculatedData = calculateSVGData(data, attribute, width, height, xOffset, yOffset);
   var svgData = calculatedData.coordinates;
   var svgChart = document.getElementById('svg-chart');
+  while (svgChart.firstChild) {
+    svgChart.removeChild(svgChart.firstChild);
+  }
   svgChart.innerHTML = "";
   svgChart.setAttribute("style", "shape-rendering:auto;height:" + height + "px; width:" + width + "px");
 
@@ -431,7 +434,7 @@ function drawValues(svgElement, svgData, data, attribute) {
     xAxisValue.setAttribute("x", svgData[i][0] - 10);
     xAxisValue.setAttribute("y", 15);
     xAxisValue.setAttribute("style", "font:italic 15px sans-serif;fill:#E65100;");
-    xAxisValue.textContent = i + 1;
+    xAxisValue.textContent = ("0" + i).slice(-2);
     svgElement.appendChild(value);
     svgElement.appendChild(xAxisValue);
   }
