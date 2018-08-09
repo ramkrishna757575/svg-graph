@@ -157,6 +157,11 @@ function plotGraph(data, attribute, width, height, xOffset = 0, yOffset = 0) {
   svgChart.innerHTML = "";
   svgChart.setAttribute("style", "shape-rendering:auto;height:" + height + "px; width:" + width + "px");
 
+  if (data.length <= 0) {
+    drawErrorMessage(svgChart);
+    return;
+  }
+
   drawArea(svgChart, svgData, height, calculatedData.distance);
   drawGridLines(svgChart, data.length, calculatedData.distance, height);
   drawSelectionBackground(svgChart, data.length, calculatedData.distance, height);
@@ -187,6 +192,22 @@ function getLineCommand(svgData) {
       coordinates[1]
   });
   return lineData;
+}
+
+/**
+ * shows invalid data message
+ * @param svgElement
+ */
+function drawErrorMessage(svgElement) {
+  var value = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "text"
+  );
+  value.setAttribute("x", 0);
+  value.setAttribute("y", 20);
+  value.setAttribute("style", "font:italic 15px sans-serif;fill:red;");
+  value.textContent = "Invalid data!!!";
+  svgElement.appendChild(value);
 }
 
 /**
@@ -402,7 +423,17 @@ function drawValues(svgElement, svgData, data, attribute) {
     value.setAttribute("style", "font:italic 15px sans-serif;fill:#9c27b0;");
     value.textContent = data[i][attribute];
     value.style.display = 'none';
+
+    var xAxisValue = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+    xAxisValue.setAttribute("x", svgData[i][0] - 10);
+    xAxisValue.setAttribute("y", 15);
+    xAxisValue.setAttribute("style", "font:italic 15px sans-serif;fill:#E65100;");
+    xAxisValue.textContent = i + 1;
     svgElement.appendChild(value);
+    svgElement.appendChild(xAxisValue);
   }
 }
 
